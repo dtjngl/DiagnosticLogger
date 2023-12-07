@@ -1,0 +1,90 @@
+<?php namespace ProcessWire;
+
+/**
+ * A module to collect and display diagnostic messages
+ */
+class DiagnosticLogger extends Wire implements Module
+{
+    public static function getModuleInfo()
+    {
+        return array(
+            'title'     => 'Diagnostic Logger',
+            'summary'   => 'Logs diagnostic messages and displays them on the admin page',
+            'version'   => 101,
+            'autoload'  => true, // Make the module autoload
+            'requires'  => 'ProcessDiagnostics',
+        );
+    }
+
+    private function _logDiagnostics()
+    {
+        $this->addHookAfter('DiagnoseModules::GetDiagnostics', function ($event) {
+            wire('log')->delete('diagnostics');
+
+            $results = $event->return;
+
+            foreach ($results as $result) {
+                if ($result['status'] != '') {
+                    wire('log')->save('diagnostics', $result['status'] . ': ' . $result['title'] . ' - ' . $result['value']);
+                }
+            }
+        });
+    }
+
+    private function _displayDiagnostics()
+    {
+        $this->addHookBefore('Process::renderPage', function(HookEvent $event) {
+            $Process = wire('Process');
+            $Page = $Process->getCurrentPage();
+            // $ProcessDiagnostics = wire('modules')->get('ProcessDiagnostics');
+
+            $this->message('hello admin');
+
+            if (!file_exists('site/assets/logs/diagnostics.txt')) {
+                $this->message('No warnings or errors found. Check "Diagnostics"-module for further diagnosis.');
+                return;
+            }
+
+            $diagnosticsFile = fopen('site/assets/logs/diagnostics.txt', 'r');
+            $diagnosticsLines = [];
+
+            while (($line = fgets($diagnosticsFile)) !== false) {
+                $diagnosticsLines[] = $line;
+            }
+
+            fclose($diagnosticsFile);
+
+            foreach ($diagnosticsLines as $line) {
+                $parts = explode('	', $line);
+                $formattedMessage = $this->formatDiagnosticMessage($parts[3]);
+
+                if ($formattedMessage[0] == 'Warning') {
+                    $this->warning($formattedMessage[0] . ': ' . $formattedMessage[1]);
+                }
+                if ($formattedMessage[0] == 'Failure') {
+                    $this->error($formattedMessage[0] . ': ' . $formattedMessage[1]);
+                }
+            }
+
+            // Populate back arguments (if you have modified them)
+            $event->arguments(0, $event);
+        });
+    }
+
+    private function formatDiagnosticMessage($line)
+    {
+        $lineParts = explode(':', $line);
+        $severity = $lineParts[0];
+        $message = $lineParts[1];
+
+        $formattedMessage[0] = $severity;
+        $formattedMessage[1] = $message;
+        return $formattedMessage;
+    }
+
+    public function init()
+    {
+        $this->_logDiagnostics();
+        $this->_displayDiagnostics();
+    }
+}
