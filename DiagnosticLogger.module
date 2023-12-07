@@ -38,7 +38,7 @@ class DiagnosticLogger extends Wire implements Module
             $Page = $Process->getCurrentPage();
             // $ProcessDiagnostics = wire('modules')->get('ProcessDiagnostics');
 
-            $this->message('hello admin');
+            // $this->message('hello admin');
 
             if (!file_exists('site/assets/logs/diagnostics.txt')) {
                 $this->message('No warnings or errors found. Check "Diagnostics"-module for further diagnosis.');
