@@ -1,0 +1,204 @@
+<?php
+
+class DiagnosticLogger extends WireData implements Module, ConfigurableModule {
+
+    public static function getModuleInfo() {
+        return [
+            'title' => 'Diagnostic Logger',
+            'version' => '1.0.0',
+            'summary' => 'Processes diagnostic logs and creates notifications in the admin GUI.',
+            'autoload' => true,
+            'singular' => true,
+            'configurable' => true, // Mark the module as configurable
+            'requires' => 'ProcessDiagnostics', // Specify the required module
+        ];
+    }
+
+    public function __construct() {
+        // Load the module settings
+        $settings = wire('modules')->getConfig($this);
+        if ($settings && is_array($settings)) {
+            foreach ($settings as $key => $value) {
+                $this->$key = $value;
+            }
+        }
+    }
+
+    public function init() {
+
+        // Hook into ProcessPageList::execute to create messages on page tree
+        $this->addHookAfter('ProcessPageList::execute', $this, 'createMessages');
+        // $this->addHookAfter('ProcessDiagnostics::execute', $this, 'sendEmails');
+
+        // Hook into LazyCron to send emails daily
+        $this->addHook('LazyCron::'.$this->email_schedule, $this, 'sendEmails');
+        // $this->addHook('LazyCron::every30Minutes', $this, 'sendEmails');
+    }
+
+    private function getLogEntries() {
+        $logFilePath = wire('config')->paths->assets . 'logs/diagnostics.txt';
+        $logEntries = [];
+
+        if (file_exists($logFilePath)) {
+            $diagnosticsFile = fopen($logFilePath, 'r');
+            if ($diagnosticsFile) {
+                while (($line = fgets($diagnosticsFile)) !== false) {
+                    $logEntries[] = $line;
+                }
+                fclose($diagnosticsFile);
+            } else {
+                $this->message('Failed to open the log file.');
+            }
+        } else {
+            $this->message('No warnings or errors found.');
+        }
+
+        return $logEntries;
+    }
+
+    /**
+     * Create messages on the page tree based on log entries
+     * 
+     * @param HookEvent $event
+     */
+    public function createMessages(HookEvent $event) {
+        // Ensure this runs only in appropriate contexts
+        if (!in_array($event->object->className, ['ProcessPageList', 'AdminPage'])) return;
+
+        $logEntries = $this->getLogEntries();
+
+        if (!empty($logEntries)) {
+            $this->message('See details in ProcessDiagnostics.', 'info');
+            foreach ($logEntries as $line) {
+                $this->processLogLine($line);
+            }
+        }
+    }
+
+    /**
+     * Send emails with log entries
+     */
+    public function sendEmails() {
+        $logEntries = $this->getLogEntries();
+
+        if (!empty($logEntries)) {
+            $this->sendAdminEmail($logEntries);
+        }
+    }
+
+    private function processLogLine($line) {
+        // Extract information from the log line
+        $sanitizer = wire('sanitizer');
+        $line = $sanitizer->text($line);
+        $parts = explode('|', $line);
+
+        // Log format based on example provided
+        $title = isset($parts[1]) ? $sanitizer->text(trim($parts[1])) : 'No title';
+        $value = isset($parts[2]) ? $sanitizer->text(trim($parts[2])) : 'No value';
+        $status = isset($parts[3]) ? $sanitizer->text(trim($parts[3])) : 'No status';
+        $action = isset($parts[4]) ? $sanitizer->text(trim($parts[4])) : '';
+
+        // Display notification based on status
+        $this->displayAdminNotification($title, $value, $status, $action);
+    }
+
+    private function displayAdminNotification($title, $value, $status, $action) {
+        // Construct the message
+        $message = "$title $value $action";
+        
+        // if (!empty($action)) {
+        //     $message .= " - Action: $action";
+        // }
+
+        // Display the message based on status
+        switch (strtolower($status)) {
+            case 'error':
+            case 'failure':
+                $this->error("ERROR! $message");
+                break;
+            case 'warning':
+                $this->warning("WARNING! $message");
+                break;
+            default:
+                // Do nothing for 'ok' status or display as info if needed
+                if (strtolower($status) !== 'ok') {
+                    $this->message($message);
+                }
+                break;
+        }
+    }
+
+    private function sendAdminEmail(array $logEntries) {
+        // Filter the log entries to include only warnings and failures
+        $filteredEntries = array_filter($logEntries, function($entry) {
+            return stripos($entry, 'failure') !== false || stripos($entry, 'warning') !== false;
+        });
+
+        // If there are no warnings or failures, do not send the email
+        if (empty($filteredEntries)) {
+            $this->message('No warnings or failures to report.');
+            return;
+        }
+
+        // Initialize the email body
+        $emailBody = "The following warnings and failures were found on " . $this->website_name . "\n\n";
+        
+        // Process each filtered log entry
+        foreach ($filteredEntries as $line) {
+            $sanitizer = wire('sanitizer');
+            $parts = explode('|', $line);
+
+            $title = isset($parts[1]) ? $sanitizer->text(trim($parts[1])) : 'No title';
+            $value = isset($parts[2]) ? $sanitizer->text(trim($parts[2])) : 'No value';
+            $status = isset($parts[3]) ? $sanitizer->text(trim($parts[3])) : 'No status';
+            $action = isset($parts[4]) ? $sanitizer->text(trim($parts[4])) : '';
+
+            // Append the formatted log entry to the email body
+            $emailBody .= "**$status**\n";
+            $emailBody .= "$title\n";
+            $emailBody .= "$value\n";
+            $emailBody .= "$action\n\n";
+        }
+
+        // Setup email details
+        $receiverEmail = $this->receiver_email;
+        $bccEmail = $this->bcc_email;
+        $replyToEmail = $this->replyto_email;
+        $senderEmail = wire('modules')->getConfig('DiagnosticLogger', 'sender_email'); // Sender email
+        $senderName = wire('modules')->getConfig('DiagnosticLogger', 'sender_name'); // Sender name
+        $subject = $this->website_name . ' Diagnostic Logs Notification';
+
+        // Create and configure the email using ProcessWire's wireMail
+        $mail = wireMail();
+        $mail->to($receiverEmail);
+
+        if ($senderEmail) {
+            $mail->from($this->sender_email); // Set sender email
+        }
+
+        if ($senderName) {
+            $mail->fromName($this->sender_name); // Set sender name
+        }
+
+        if ($bccEmail) {
+            $mail->bcc($bccEmail); // Add BCC address if provided
+        }
+
+        if ($replyToEmail) {
+            $mail->replyto($replyToEmail); // Add Reply-To address if provided
+        }
+
+        $mail->subject($subject);
+        $mail->body($emailBody);
+
+        // Send the email and handle errors
+        if ($mail->send()) {
+            $this->message('Admin notification email sent successfully.');
+        } else {
+            $this->error('Failed to send admin notification email.');
+        }
+    }
+    
+                    
+
+}
