@@ -7,6 +7,7 @@ class DiagnosticLogger extends WireData implements Module, ConfigurableModule {
             'title' => 'Diagnostic Logger',
             'version' => '1.0.0',
             'summary' => 'Processes diagnostic logs and creates notifications in the admin GUI.',
+            'author' => 'froot',
             'autoload' => true,
             'singular' => true,
             'configurable' => true, // Mark the module as configurable
