@@ -1,93 +1,66 @@
-# DiagnosticLogger Module for ProcessWire
+# DiagnosticLogger
 
-## Overview
-
-**DiagnosticLogger** is a ProcessWire module designed to process diagnostic logs and create notifications in the admin GUI. It can also send automated email notifications summarizing warnings and errors found in the logs. This module is highly configurable and integrates seamlessly with the **ProcessDiagnostics** module, which it requires.
+**DiagnosticLogger** is a ProcessWire module designed to handle diagnostic logs and create notifications in the admin GUI. It can also send automated email summaries for warnings and errors found in these logs.
 
 ## Features
 
-- **Admin Notifications:** Automatically generates admin notifications based on log entries.
-- **Email Notifications:** Sends emails containing warnings and errors found in the logs.
-- **Configurable Settings:** Easily customize the sender/receiver email addresses, notification schedules, and more via the module's configuration page.
-- **LazyCron Integration:** Uses LazyCron to schedule the email notifications, which can be customized as per your needs.
+- **Log Handling**: Captures and processes diagnostic logs.
+- **Admin Notifications**: Displays notifications within the admin GUI for detected issues.
+- **Email Summaries**: Sends automated emails summarizing warnings and errors.
 
-## Requirements
+## Integration
 
-- **ProcessWire 3.x**
-- **ProcessDiagnostics** module
+The module integrates with **ProcessDiagnostics**, which is required for its functionality. It is designed to work seamlessly with ProcessDiagnostics but is not highly configurable.
+
+## Workaround for Background Diagnostics
+
+The logging feature acts as a workaround due to difficulties with running diagnostics in the background. The hooked method from ProcessDiagnostics will need to be made hookable for better integration.
+
+## LazyCron Scheduling
+
+For scheduling tasks using LazyCron, use the following time schedules:
+
+- `every2Weeks`: Runs tasks every two weeks.
+- `everyDay`: Runs tasks every day.
+- `everyWeek`: Runs tasks every week.
 
 ## Installation
 
-1. **Download and Install the Module:**
+1. Download the module and place it in the `site/modules` directory.
+2. Log in to the ProcessWire admin interface.
+3. Go to Modules > Refresh.
+4. Locate **DiagnosticLogger** and click **Install**.
 
-   - Clone or download the repository and place the module folder into the `site/modules/` directory of your ProcessWire installation.
-   - In the ProcessWire admin, navigate to **Modules > Refresh**, then find and install the **DiagnosticLogger** module.
+## Configuration
 
-2. **Configure the Module:**
-
-   - After installation, go to the module's settings page to configure the email settings, including sender/receiver email addresses, email schedule, and more.
-
-3. **Integrate with ProcessDiagnostics:**
-
-   - To ensure the **DiagnosticLogger** module can capture the relevant log entries, add the following lines to the `ProcessDiagnostics.module` file in the appropriate location where logs are being handled:
-     ```php
-     wire('log')->delete('diagnostics'); // Clears previous logs
-     wire('log')->save('diagnostics', '|' . $row['title'] . '|' . $row['value'] . '|' . $row['status'] . '|' . $row['action']); // Saves new log entries
-     ```
-   - These lines will log the diagnostic data in the correct format so that the **DiagnosticLogger** can process and notify based on these logs.
+1. Access the configuration settings in the ProcessWire admin interface.
+2. Adjust the settings according to your needs.
 
 ## Usage
 
-### Admin Notifications
+Once installed, **DiagnosticLogger** will automatically start processing diagnostic logs. You can view notifications in the admin GUI and receive email summaries based on your configuration.
 
-Once installed, the module will automatically start generating admin notifications based on the entries in the diagnostic logs. These notifications will appear in the ProcessWire admin interface, providing quick insights into any issues or warnings.
+## Requirements
 
-### Email Notifications
+- ProcessWire 3.x or later
+- ProcessDiagnostics module
 
-The module can also send out email notifications that summarize any warnings or failures found in the diagnostic logs. The email configuration, including sender and receiver details, can be set up in the module's configuration page.
+## Troubleshooting
 
-### Log Format
+If you encounter issues:
 
-The module expects the log entries to follow a specific format:
-
-timestamp | title | value | status | action
-
-Where:
-- **timestamp**: Date and time of the log entry.
-- **title**: A brief title describing the log entry.
-- **value**: The core information or value associated with the log entry.
-- **status**: The status, which can be `error`, `warning`, `ok`, etc.
-- **action**: Any action taken or recommended based on the log entry.
-
-### LazyCron Scheduling
-
-By default, the module uses LazyCron to send out email notifications based on the schedule defined in the module's settings. You can change the schedule by modifying the `email_schedule` setting.
-
-## Configuration Options
-
-The module provides several configuration options accessible via the ProcessWire admin interface:
-- **Sender Name:** The name that will appear as the sender of the email.
-- **Sender Email:** The email address that will appear as the sender.
-- **Receiver Name:** The name of the person or entity receiving the email.
-- **Receiver Email:** The email address where notifications will be sent.
-- **Reply-To Email:** The email address where replies will be directed.
-- **BCC Email:** An optional email address for sending blind carbon copies.
-- **Email Subject:** The subject line for the email notifications.
-- **Website Name:** The name of the website, used in the email body.
-- **Email Schedule:** The LazyCron schedule for sending emails (e.g., `every2Weeks`, `daily`, `weekly`).
-
-## Example Usage
-
-After installing and configuring the module, the **DiagnosticLogger** will begin to log and notify you based on your configuration. No additional steps are necessary unless you want to adjust the module's settings.
+- Ensure **ProcessDiagnostics** is correctly installed and configured.
+- Check the module logs for any error messages.
+- Review the configuration settings to ensure they are set up properly.
 
 ## Contributing
 
-Contributions are welcome! Please fork the repository and submit a pull request with your improvements or fixes. Ensure your code adheres to the coding standards used in this project.
+Feel free to contribute to the development of **DiagnosticLogger** by submitting issues or pull requests on the [GitHub repository](https://github.com/your-repository-link).
 
 ## License
 
-This module is open-source software licensed under the MIT License.
+This module is licensed under the [MIT License](LICENSE).
 
 ## Contact
 
-If you have any questions, issues, or suggestions, feel free to open an issue on GitHub or reach out directly.
+For any questions or support, please contact [your-email@example.com](mailto:your-email@example.com).
