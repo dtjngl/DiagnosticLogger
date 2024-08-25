@@ -165,8 +165,8 @@ class DiagnosticLogger extends WireData implements Module, ConfigurableModule {
         $receiverEmail = $this->receiver_email;
         $bccEmail = $this->bcc_email;
         $replyToEmail = $this->replyto_email;
-        $senderEmail = wire('modules')->getConfig('DiagnosticLogger', 'sender_email'); // Sender email
-        $senderName = wire('modules')->getConfig('DiagnosticLogger', 'sender_name'); // Sender name
+        $senderEmail = $this->sender_email; // Sender email
+        $senderName = $this->sender_name; // Sender name
         $subject = $this->website_name . ' Diagnostic Logs Notification';
 
         // Create and configure the email using ProcessWire's wireMail
@@ -182,7 +182,7 @@ class DiagnosticLogger extends WireData implements Module, ConfigurableModule {
         }
 
         if ($bccEmail) {
-            $mail->bcc($bccEmail); // Add BCC address if provided
+            $mail->header('bcc', $bccEmail); // Add BCC address if provided
         }
 
         if ($replyToEmail) {
