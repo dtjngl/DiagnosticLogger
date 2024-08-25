@@ -14,6 +14,26 @@ Do you struggle like me with keeping track of updates across multiple website pr
 
 The module integrates with **ProcessDiagnostics**, which is required for its functionality. It is designed to work seamlessly with ProcessDiagnostics but is not highly configurable.
 
+## Important!!
+
+I wasn't able to accomplish this in the hook from inside the DiagnosticLogger class so you need to add these lines in the ProcessDiagnostics.module file to make this work.
+
+ ```php
+    public function ___execute() {
+    wire('log')->delete('diagnostics'); // to not be redundant
+    // …
+    foreach ($results as $caption => $section_results) {
+        // …
+        foreach ($section_results as $k => $row) {
+            // …
+            wire('log')->save('diagnostics', '|' . $row['title'] . '|' . $row['value'] . '|' . $row['status'] . '|' . $row['action']);
+        }
+    }
+}
+```
+
+This will log the diagnostics everytime the ProcessDiagnostics runs. I still haven't figured out how to run diagnostics automatically or schedule them.
+
 ## Workaround for Background Diagnostics
 
 The logging feature acts as a workaround due to difficulties with running diagnostics in the background. The hooked method from ProcessDiagnostics will need to be made hookable for better integration.
