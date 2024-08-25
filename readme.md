@@ -19,7 +19,7 @@ The module integrates with **ProcessDiagnostics**, which is required for its fun
 I wasn't able to accomplish this in the hook from inside the DiagnosticLogger class so you need to add these lines in the ProcessDiagnostics.module file to make this work.
 
  ```php
-    public function ___execute() {
+public function ___execute() {
     wire('log')->delete('diagnostics'); // to not be redundant
     // …
     foreach ($results as $caption => $section_results) {
