@@ -1,7 +1,5 @@
 # DiagnosticLogger
 
-Do you struggle like me with keeping track of updates across multiple website projects? Do you also feel like your clients are unaware of what web development maintenance involves? Do you sometimes feel unappreciated for your hard work? If so, here's a solution for you. It's not perfect, but it's a start.
-
 **DiagnosticLogger** is a ProcessWire module designed to handle diagnostic logs and create notifications in the admin GUI. It can also send automated email summaries for warnings and errors found in these logs.
 
 ## Features

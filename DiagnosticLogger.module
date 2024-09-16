@@ -7,7 +7,7 @@ class DiagnosticLogger extends WireData implements Module, ConfigurableModule {
             'title' => 'Diagnostic Logger',
             'version' => '1.0.0',
             'summary' => 'Processes diagnostic logs and creates notifications in the admin GUI.',
-            'author' => 'froot',
+            'author' => 'chatGPT',
             'autoload' => true,
             'singular' => true,
             'configurable' => true, // Mark the module as configurable
@@ -160,6 +160,8 @@ class DiagnosticLogger extends WireData implements Module, ConfigurableModule {
             $emailBody .= "$value\n";
             $emailBody .= "$action\n\n";
         }
+
+        $emailBody .= "See more details in the ProcessDiagnostics module.";
 
         // Setup email details
         $receiverEmail = $this->receiver_email;
